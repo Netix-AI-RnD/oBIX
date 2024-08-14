@@ -195,6 +195,10 @@ class Client:
     def set_point_auto(self, point_path: str, data_type: DataType, parameter=None):
         return self.__operate_point(point_path, "auto", "0", data_type, parameter)
 
+    def set_point_custom(self, point_path: str, slot:str, value, data_type: DataType, parameter=None):
+        return self.__operate_point(point_path, slot, value, data_type, parameter)
+
+
     def override_point(self, point_path: str, value, data_type: DataType, time_delta: timedelta = None):
         try:
             url = self.__get_url(point_path, "override")
@@ -239,6 +243,56 @@ class Client:
             Logger.instance().error(e)
             Logger.instance().error(traceback.format_exc())
             return False
+
+    def override_point_custom(self, point_path: str, slot:str, value, data_type: DataType, time_delta: timedelta = None):
+        try:
+            url = self.__get_url(point_path, slot)
+            urllib3.disable_warnings()
+            post_data = dict()
+            post_data["obj"] = dict()
+            post_data["obj"]["reltime"] = dict()
+            post_data["obj"]["reltime"]["@name"] = "duration"
+            if time_delta:
+                post_data["obj"]["reltime"]["@val"] = "PT{0}S".format(time_delta.seconds)
+            else:
+                post_data["obj"]["reltime"]["@val"] = "PT0S"
+            type_str = Util.get_data_type_str(data_type)
+            post_data["obj"][type_str] = dict()
+            post_data["obj"][type_str]["@name"] = "active"
+            if data_type == DataType.bool:
+                post_data["obj"][type_str]["@val"] = str(value).lower()
+            else:
+                post_data["obj"][type_str]["@val"] = str(value)
+            post_data_str = xmltodict.unparse(post_data, full_document=False)
+            print(post_data_str)
+            if not post_data_str:
+                Logger.instance().error("Override Point Failed: POST Data serialization failed!")
+                return False
+            if self.__enable_proxy:
+                response = requests.post(url, auth=(self.__user_name, self.__password), data=post_data_str,
+                                         proxies=self.__proxy_dict, verify=False)
+            else:
+                response = requests.post(url, auth=(self.__user_name, self.__password), data=post_data_str, verify=False)
+            if response.status_code == 200:
+                xml_root = xmlElement.fromstring(response.text)
+                xml_root_str = xmlElement.tostring(xml_root, encoding="utf-8")
+                root = xmltodict.parse(xml_root_str)
+                first_key = list(root.keys())[0]
+                if "err" in first_key:
+                    error_msg = root[first_key]["@display"]
+                    Logger.instance().error("Override Point Failed: {0}".format(error_msg))
+                    return error_msg
+                else:
+                    return "OK"
+            else:
+                Logger.instance().error("Override Point Failed: Response StatusCode is {0}".format(response.status_code))
+                return False
+        except Exception as e:
+            Logger.instance().error("Override Point Failed: Trigger exception！")
+            Logger.instance().error(e)
+            Logger.instance().error(traceback.format_exc())
+            return False
+
 
     def emergency_override_point(self, point_path: str, value, data_type: DataType, parameter=None):
         return self.__operate_point(point_path, "emergencyOverride", value, data_type, parameter)
