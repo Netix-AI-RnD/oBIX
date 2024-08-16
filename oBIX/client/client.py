@@ -219,6 +219,7 @@ class Client:
             if not post_data_str:
                 Logger.instance().error("Override Point Failed: POST Data serialization failed!")
                 return False
+            print(post_data_str)
             if self.__enable_proxy:
                 response = requests.post(url, auth=(self.__user_name, self.__password), data=post_data_str,
                                          proxies=self.__proxy_dict, verify=False)
@@ -244,7 +245,7 @@ class Client:
             Logger.instance().error(traceback.format_exc())
             return False
 
-    def override_point_custom(self, point_path: str, slot:str, value, data_type: DataType, time_delta: timedelta = None):
+    def override_point_command(self, point_path: str, slot:str, time_delta: timedelta = None):
         try:
             url = self.__get_url(point_path, slot)
             urllib3.disable_warnings()
@@ -256,13 +257,6 @@ class Client:
                 post_data["obj"]["reltime"]["@val"] = "PT{0}S".format(time_delta.seconds)
             else:
                 post_data["obj"]["reltime"]["@val"] = "PT0S"
-            type_str = Util.get_data_type_str(data_type)
-            post_data["obj"][type_str] = dict()
-            post_data["obj"][type_str]["@name"] = "active"
-            if data_type == DataType.bool:
-                post_data["obj"][type_str]["@val"] = str(value).lower()
-            else:
-                post_data["obj"][type_str]["@val"] = str(value)
             post_data_str = xmltodict.unparse(post_data, full_document=False)
             print(post_data_str)
             if not post_data_str:
