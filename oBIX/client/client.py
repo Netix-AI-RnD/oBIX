@@ -328,7 +328,7 @@ class Client:
             return False
 
     def write_point(self, url: str, value, data_type: DataType, parameter=None):
-        self.set_point_value(url, value, data_type, parameter)
+        return self.set_point_value(url, value, data_type, parameter)
 
     def read_history(self, station, point, start_time: datetime, end_time: datetime = None, limit=None):
         try:
