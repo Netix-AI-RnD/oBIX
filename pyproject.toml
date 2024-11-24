@@ -19,6 +19,8 @@ dependencies = [
     "urllib3==2.2.3",
     "pytz==2024.2",
     "iupdatable==0.3.1",
+    "Events==0.5",
+    "APScheduler==3.11.0"
 ]
 
 dynamic = ["version"]
